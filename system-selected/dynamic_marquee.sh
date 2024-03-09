@@ -1,32 +1,47 @@
 #!/bin/bash
-#This is an example file how Events on START or STOP can be uses
-#
+
+# Get the directory of the current script
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+
+# Source config.sh from one directory up
+source "$script_dir/../config.sh"
+
+# Functions
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$logfile"
+}
+
+send_command() {
+    local url="http://$dynaframe_hostname/command/?COMMAND=$1"
+    curl -G --max-time 5 \
+         --data-urlencode "VALUE=$2" \
+         --data-urlencode "FALLBACK=${default_root}default.png" \
+         "$url" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        log_message "Error sending command $1"
+    fi
+}
  
 #Set logfile location and filename
 logfile=/tmp/scriptlog.txt
 
-dyna_root="http://dfmarquee"
-batocera_root="/home/pi/batocera/"
-dyna_dir_root="/home/pi/batocera/themes/Alekfull-ARTFLIX/assets/logos/"
-default_root="/home/pi/Pictures/Default/"
+# Path to System logos on Dynaframe (Example: mame.png, cps2.png, etc)
+logo_path="/home/pi/batocera/themes/Alekfull-ARTFLIX/assets/logos/"
 
+# Initialize variables
 systemname=""
 romname=""
 
-
-
-echo "system-selected" > $logfile
-echo "$@" >> $logfile
+# Log the system selected
+log_message "system-selected"
+log_message "$*"
 systemname=$1
-echo "System: $systemname" >> $logfile
+log_message "System: $systemname"
 romname=$(basename "${2%.*}")
-echo "ROM: $romname" >> $logfile
+log_message "ROM: $romname"
 
-curl -G --max-time 5 \
-    --data-urlencode "VALUE=FALSE" \
-    ${dyna_root}/command/?COMMAND=AutomaticMode > /dev/null 2>&1 &
-
-curl -G --max-time 5 \
-    --data-urlencode "VALUE=${dyna_dir_root}${systemname}.png" \
-    --data-urlencode "FALLBACK=${default_root}default.png"\
-    ${dyna_root}/command/?COMMAND=PLAYFILE > /dev/null 2>&1 &
+# Send commands
+# Turns off AutomaticMode in Dynaframe so it stays static on the content you are about to send
+send_command "AutomaticMode" "FALSE"
+# Tells Dynaframe to show the logo of the system you have selected in the Batocera UI
+send_command "PLAYFILE" "${logo_path}${systemname}.png"

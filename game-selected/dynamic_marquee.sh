@@ -1,37 +1,52 @@
 #!/bin/bash
-#This is an example file how Events on START or STOP can be uses
-#
+
+# Get the directory of the current script
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+
+# Source config.sh from one directory up
+source "$script_dir/../config.sh"
+
+# Functions
+log_message() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$logfile"
+}
+
+send_command() {
+    local url="http://$dynaframe_hostname/command/?COMMAND=$1"
+    curl -G --max-time 5 \
+         --data-urlencode "VALUE=$2" \
+         --data-urlencode "FALLBACK=${default_root}default.png" \
+         "$url" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        log_message "Error sending command $1"
+    fi
+}
  
 #Set logfile location and filename
 logfile=/tmp/scriptlog.txt
 
-dyna_root="http://dfmarquee"
-dyna_dir_root="/home/pi/batocera/roms/"
-default_root="/home/pi/Pictures/Default/"
+# Parent path to Game marquees on Dynaframe
+marquee_path="/home/pi/batocera/roms/"
 
-system_name=""
-rom_name=""
-extension=""
+# Initial values for systemname and romname
+systemname=$1
+romname=$(basename "${2%.*}")
 
-echo "game-selected" > $logfile
-echo "$@" >> $logfile
-system_name=$1
-echo "System: $system_name" >> $logfile
-rom_name=$(basename "${2%.*}")
-echo "ROM: $rom_name" >> $logfile
-
-if [[ $system_name = 'nes' ]]
-then
+# Example of overriding 'nes' to look for marquees with jpg extension instead of png
+if [[ $systemname = 'nes' ]]; then
     extension='jpg'
 else
     extension='png'
 fi
 
-curl -G --max-time 5 \
-    --data-urlencode "VALUE=FALSE" \
-    ${dyna_root}/command/?COMMAND=AutomaticMode > /dev/null 2>&1 &
+# Log the system selected
+log_message "system-selected"
+log_message "$*"
+log_message "System: $systemname"
+log_message "ROM: $romname"
 
-curl -G --max-time 5 --silent \
-    --data-urlencode "VALUE=${dyna_dir_root}${system_name}/images/${rom_name}-marquee.${extension}" \
-    --data-urlencode "FALLBACK=${default_root}default.png"\
-    ${dyna_root}/command/?COMMAND=PLAYFILE > /dev/null 2>&1 &
+# Send commands
+# Turns off AutomaticMode in Dynaframe
+send_command "AutomaticMode" "FALSE"
+# Tells Dynaframe to show the logo of the system selected
+send_command "PLAYFILE" "${marquee_path}${systemname}/images/${romname}-marquee.${extension}"
