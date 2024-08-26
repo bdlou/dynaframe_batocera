@@ -12,13 +12,17 @@ log_message() {
 }
 
 send_command() {
-    local url="http://$dynaframe_hostname/command/?COMMAND=$1"
+    local command=$1
+    local value=$2
+    local url="http://$dynaframe_hostname:7256/playitem?$command"
+    
     curl -G --max-time 5 \
-         --data-urlencode "VALUE=$2" \
-         --data-urlencode "FALLBACK=${default_root}default.png" \
+         --data-urlencode "item=$value" \
+         --data-urlencode "fallback=${default_root}default.png" \
          "$url" > /dev/null 2>&1
+    
     if [ $? -ne 0 ]; then
-        log_message "Error sending command $1"
+        log_message "Error sending command $command with value $value"
     fi
 }
  
@@ -33,12 +37,12 @@ systemname=""
 romname=""
 
 # Log the system selected
-log_message "system-selected"
-log_message "$*"
+#log_message "system-selected"
+#log_message "$*"
 systemname=$1
-log_message "System: $systemname"
+#log_message "System: $systemname"
 romname=$(basename "${2%.*}")
-log_message "ROM: $romname"
+#log_message "ROM: $romname"
 
 # Send commands
 # Turns off AutomaticMode in Dynaframe so it stays static on the content you are about to send
