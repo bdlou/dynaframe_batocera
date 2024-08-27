@@ -14,7 +14,7 @@ log_message() {
 send_command() {
     local command=$1
     local value=$2
-    local url="http://$dynaframe_hostname:7256/playitem?$command"
+    local url="http://$dynaframe_hostname:7256/playfile?$command"
     
     curl -G --max-time 5 \
          --data-urlencode "item=$value" \
