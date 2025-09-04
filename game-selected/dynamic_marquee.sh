@@ -6,6 +6,9 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 # Source config.sh from one directory up
 source "$script_dir/../config.sh"
 
+# File used to debounce rapid-fire requests
+debounce_file=/tmp/dynaframe_last_request
+
 # Set logfile location and filename
 logfile=/tmp/scriptlog.txt
 
@@ -25,6 +28,16 @@ log_error() {
     
     # Log the error message with timestamp
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$logfile"
+}
+
+debounced_send_command() {
+    local filepath=$1
+    printf '%s' "$filepath" > "$debounce_file"
+    sleep "$idle_wait"
+    local current=$(cat "$debounce_file" 2>/dev/null)
+    if [ "$current" = "$filepath" ]; then
+        send_command "$filepath"
+    fi
 }
 
 send_command() {
@@ -75,4 +88,4 @@ fi
 # send_command "AutomaticMode" "FALSE"
 
 # Send command to show the logo of the system selected
-send_command "${marquee_path}${systemname}/images/${romname}-marquee.${extension}"
+debounced_send_command "${marquee_path}${systemname}/images/${romname}-marquee.${extension}"
