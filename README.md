@@ -7,6 +7,8 @@ The scripts need to be placed in /userdata/system/configs/emulationstation/scrip
 /userdata/system/configs/emulationstation/scripts/game-selected/*
 /userdata/system/configs/emulationstation/scripts/system-selected/*
 
+You must then chmod +x each .sh file in order for them to be used
+
 config.sh
 Set dynaframe_hostname to the hostname (or IP) of the Dynaframe you wish to control.
 Set fallback_playlist to the path where you will host a default.png to show up whenever an image is unavailable
